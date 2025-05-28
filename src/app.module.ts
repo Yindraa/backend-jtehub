@@ -7,13 +7,18 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { ProfileController} from './profile/profile.controller';
 import { ProfileService } from './profile/profile.service';
+import { ScheduleController } from './schedule/schedule.controller';
+import { ScheduleService } from './schedule/schedule.service';
+import { RoomsController } from './rooms/rooms.controller';
+import { RoomsService } from './rooms/rooms.service';
+import { Room } from './entities';
 @Module({
   imports: [
     JwtModule.register({
       global: true,
       secret: process.env.SUPABASE_JWT_SECRET,
 })],
-  controllers: [AppController, AuthController, ProfileController],
-  providers: [AppService, AuthService, JwtStrategy, ProfileService],
+  controllers: [AppController, AuthController, ProfileController, ScheduleController, RoomsController],
+  providers: [AppService, AuthService, JwtStrategy, ProfileService, ScheduleService, RoomsService],
 })
 export class AppModule {}
