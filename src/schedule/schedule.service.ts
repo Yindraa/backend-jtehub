@@ -1,8 +1,7 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { CreateScheduleDto, UpdateScheduleDto } from './schedule.dto';
-import { Schedule } from '../entities'; // Assuming you have a Schedule entity defined
-import { Course } from '../course/course.dto';
+import { Schedule, Course } from '../entities'; // Assuming you have a Schedule entity defined
 
 @Injectable()
 export class ScheduleService {
@@ -62,7 +61,6 @@ export class ScheduleService {
             {
               course_name: courseName,
               course_code: courseCode,
-              lecturer_name: lecturer,
             },
           ])
           .select()
@@ -82,6 +80,7 @@ export class ScheduleService {
         {
           course_id: course.id,
           room_id: roomId,
+          lecturer_name: lecturer,
           schedule_start_time: scheduleStartTime,
           schedule_end_time: scheduleEndTime,
           semester: semester,
