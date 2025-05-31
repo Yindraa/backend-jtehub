@@ -1,8 +1,8 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './rooms.dto';
 import { JwtGuard } from '../auth/auth.guard'; // Ensure you have the correct path to your JWT guard
-// import { AdminGuard } from '../auth/guards/admin.guard'; // Example guard
+import { CurrentRoomStatusDto } from './rooms.dto'; // Assuming you have a DTO for current room status
 
 @Controller('rooms')
 @UseGuards(JwtGuard)
@@ -14,6 +14,9 @@ export class RoomsController {
   create(@Body() createRoomDto: CreateRoomDto) {
     return this.roomsService.create(createRoomDto);
   }
-
+  @Get('current-status')
+  getCurrentStatus(): Promise<CurrentRoomStatusDto[]> {
+    return this.roomsService.findCurrentStatus();
+  }
     // ... other room endpoints (GET, PUT, DELETE)
 }

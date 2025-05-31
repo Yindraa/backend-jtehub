@@ -31,3 +31,16 @@ export class CreateRoomDto {
   @IsString({ each: true })
   facilities?: string[];
 }
+
+export class CurrentRoomStatusDto {
+  roomId: string;
+  roomCode: string;
+  roomName: string;
+  status: 'aktif' | 'kosong' | 'pemeliharaan';
+  capacity: number;
+  rating: number;
+  courseName: string | null;
+  lecturerName: string | null;
+  scheduleStartTime: Date | null;
+  scheduleEndTime: Date | null;
+}
