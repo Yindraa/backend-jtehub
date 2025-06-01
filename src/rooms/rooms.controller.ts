@@ -1,11 +1,12 @@
-import { Controller, Post, Body, UseGuards, Get, Patch, Param, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Patch, Param, Req, BadRequestException } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './rooms.dto';
 import { JwtGuard } from '../auth/auth.guard'; // Ensure you have the correct path to your JWT guard
 import { CurrentRoomStatusDto, UpdateRoomDto, RoomScheduleDto } from './rooms.dto'; // Assuming you have a DTO for current room status
 import { Room } from '../entities'; // Assuming you have a Room entity defined
-import { CommentResponseDto, CreateCommentDto } from 'src/auth/comment/comment.dto';
+import { CommentResponseDto, CreateCommentDto, VoteType } from 'src/auth/comment/comment.dto';
 import { commentsService } from 'src/auth/comment/comment.service'; // Assuming you have a CommentsService for handling comments
+import { VoteCommentDto } from 'src/auth/comment/vote.comment.dto';
 
 @Controller('rooms')
 @UseGuards(JwtGuard)
@@ -59,6 +60,22 @@ export class RoomsController {
     @Param('roomCode') roomCode: string,
   ): Promise<CommentResponseDto[]> {
     return this.commentsService.getCommentsForRoom(roomCode);
+  }
+
+  @Post(':roomCode/comments/:commentId/vote')
+  async voteOnComment(
+    @Param('roomCode') roomCode: string, // Included for route consistency, though not directly used by service if commentId is global
+    @Param('commentId') commentId: string,
+    @Body() voteCommentDto: VoteCommentDto,
+    @Req() req: any,
+  ): Promise<{ message: string; likeCount: number; dislikeCount: number; userVote: VoteType | null }> {
+    const userId = req.user.id;
+    if (!userId) {
+      throw new BadRequestException('User ID not found on request.');
+    }
+    // roomCode isn't strictly needed by voteOnComment if commentId is unique,
+    // but it's good for route structure. You could add a check if commentId belongs to roomCode.
+    return this.commentsService.voteOnComment(commentId, userId, voteCommentDto);
   }
     // ... other room endpoints (GET, PUT, DELETE)
 }

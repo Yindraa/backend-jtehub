@@ -1,9 +1,9 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { formatDistanceToNow } from 'date-fns';
 import { id as localeId } from 'date-fns/locale'; // Indonesian locale
-import { CreateCommentDto } from './comment.dto';
-import { CommentResponseDto, CommentUserDto } from './comment.dto'; // Assuming these DTOs are defined in comment.dto.ts
+import { CreateCommentDto, VoteType, CommentResponseDto, CommentUserDto } from './comment.dto'; // Consolidate imports from comment.dto
+import { VoteCommentDto } from './vote.comment.dto';
 
 @Injectable()
 export class commentsService {
@@ -91,8 +91,8 @@ export class commentsService {
     };
   }
 
-  async getCommentsForRoom(roomCode: string): Promise<CommentResponseDto[]> {
-    // 1. Find room by roomCode (same as before)
+  async getCommentsForRoom(roomCode: string, currentUserId?: string): Promise<CommentResponseDto[]> {
+    // ... (find room by roomCode - same as before) ...
     const { data: roomData, error: roomError } = await this.supabase
       .from('rooms')
       .select('id')
@@ -104,55 +104,183 @@ export class commentsService {
     }
     const roomId = roomData.id;
 
-    // 2. Fetch comments, joining with 'profiles' table
-    // The join is on room_comments.user_id = profiles.id
-    const { data: comments, error: commentsError } = await this.supabase
+
+    // Base query for comments
+    let query = this.supabase
       .from('room_comments')
       .select(`
         id,
-        user_id,
         rating,
         comment_text,
         created_at,
+        like_count,  
+        dislike_count,  
         profiles (
           id,
           fullname,
           username
         )
+        ${currentUserId ? `, comment_votes!left(vote_type)` : ''} -- Conditionally fetch user's vote
       `)
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: false });
+      .eq('room_id', roomId);
+
+    // If currentUserId is provided, filter comment_votes for that user
+    if (currentUserId) {
+        query = query.eq('comment_votes.user_id', currentUserId);
+    }
+    
+    query = query.order('created_at', { ascending: false }); // Newest first
+    const { data: comments, error: commentsError } = await query;
+
 
     if (commentsError) {
-      console.error('Error fetching comments:', commentsError);
+      console.error('Error fetching comments with votes:', commentsError);
       throw new Error('Could not fetch comments.');
     }
 
     if (!comments) return [];
-    return comments.map((comment) => {
-      // Supabase returns the related 'profiles' record as an object here.
-      // If 'profiles' is null (e.g., user_id in room_comments is stale or RLS issue), provide fallbacks.
-      const profileArray = comment.profiles as any;
-      const profile = Array.isArray(profileArray) ? profileArray[0] : profileArray as { id: string; fullname: string | null; username: string | null; nim?: string | null; } | null;
 
+    return comments.map((comment: any) => { // Use 'any' or a more specific generated type
+      const profile = comment.profiles as { id: string; fullname: string | null; username: string | null; } | null;
       const userDto: CommentUserDto = {
-        id: profile?.id || comment.user_id || 'unknown-user-id', // Fallback to user_id from comment if profile is missing
+        id: profile?.id || comment.user_id || 'unknown-user-id',
         fullName: profile?.fullname || 'User',
         username: profile?.username || 'unknown_user',
-        // nim: profile?.nim || null, // Uncomment and use if NIM is in profiles
       };
+
+      // Extract user's vote if present (Supabase returns it as an array with !left join)
+      let userVote: VoteType | null = null;
+      if (comment.comment_votes && Array.isArray(comment.comment_votes) && comment.comment_votes.length > 0) {
+          userVote = comment.comment_votes[0].vote_type as VoteType;
+      } else if (comment.comment_votes && !Array.isArray(comment.comment_votes)) {
+          // If not an array but a single object (depends on exact Supabase client version/behavior for !left)
+          userVote = (comment.comment_votes as any).vote_type as VoteType;
+      }
+
 
       return {
         id: comment.id,
         user: userDto,
         rating: comment.rating,
         commentText: comment.comment_text,
-        createdAt: comment.created_at,
+        likeCount: comment.like_count,
+        dislikeCount: comment.dislike_count,
+        userVote: userVote, // Add the user's vote
+        createdAt: new Date(comment.created_at),
         createdAtRelative: formatDistanceToNow(new Date(comment.created_at), {
           addSuffix: true,
           locale: localeId,
         }),
       };
     });
+  }
+
+  async voteOnComment(
+    commentId: string,
+    userId: string,
+    voteCommentDto: VoteCommentDto,
+  ): Promise<{ message: string; likeCount: number; dislikeCount: number; userVote: VoteType | null }> {
+    const { voteType } = voteCommentDto;
+
+    // 1. Check if comment exists
+    const { data: commentData, error: commentError } = await this.supabase
+      .from('room_comments')
+      .select('id, like_count, dislike_count') // Select counts for immediate return
+      .eq('id', commentId)
+      .single();
+
+    if (commentError || !commentData) {
+      throw new NotFoundException(`Comment with ID ${commentId} not found.`);
+    }
+
+    // 2. Check for existing vote by this user on this comment
+    const { data: existingVote, error: voteCheckError } = await this.supabase
+      .from('comment_votes')
+      .select('id, vote_type')
+      .eq('comment_id', commentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (voteCheckError && voteCheckError.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
+      console.error('Error checking existing vote:', voteCheckError);
+      throw new Error('Could not process vote due to a database error.');
+    }
+
+    let message: string;
+    let finalUserVote: VoteType | null = voteType as unknown as VoteType;
+    if (existingVote) {
+      // User has an existing vote
+      if (existingVote.vote_type === voteType) {
+        // User is clicking the same vote type again (e.g., unliking a liked comment)
+        const { error: deleteError } = await this.supabase
+          .from('comment_votes')
+          .delete()
+          .match({ id: existingVote.id });
+
+        if (deleteError) {
+          console.error('Error deleting vote:', deleteError);
+          throw new Error('Could not remove existing vote.');
+        }
+        message = `Vote removed.`;
+        finalUserVote = null;
+      } else {
+        // User is changing their vote (e.g., from like to dislike)
+        const { error: updateError } = await this.supabase
+          .from('comment_votes')
+          .update({ vote_type: voteType, updated_at: new Date() })
+          .match({ id: existingVote.id });
+
+        if (updateError) {
+          console.error('Error updating vote:', updateError);
+          throw new Error('Could not update existing vote.');
+        }
+        message = `Vote changed to ${voteType}.`;
+      }
+    } else {
+      // No existing vote, create a new one
+      const { error: insertError } = await this.supabase
+        .from('comment_votes')
+        .insert({
+          comment_id: commentId,
+          user_id: userId,
+          vote_type: voteType,
+        });
+
+      if (insertError) {
+        // This could be a unique constraint violation if race condition, but our previous check should mostly prevent it
+        console.error('Error inserting new vote:', insertError);
+        if (insertError.code === '23505') { // Unique violation
+            throw new ConflictException('Vote already submitted in a concurrent request.');
+        }
+        throw new Error('Could not submit new vote.');
+      }
+      message = `${voteType.charAt(0).toUpperCase() + voteType.slice(1)}d successfully.`;
+    }
+
+    // The triggers will update like_count and dislike_count.
+    // For an immediate response, we can re-fetch the comment's counts.
+    const { data: updatedCommentData, error: fetchError } = await this.supabase
+        .from('room_comments')
+        .select('like_count, dislike_count')
+        .eq('id', commentId)
+        .single();
+
+    if (fetchError || !updatedCommentData) {
+        console.error('Error fetching updated vote counts:', fetchError);
+        // Return stale counts from before if fetch fails, or handle error
+        return {
+            message,
+            likeCount: commentData.like_count, // Stale, but better than erroring out response
+            dislikeCount: commentData.dislike_count,
+            userVote: finalUserVote,
+        };
+    }
+
+    return {
+      message,
+      likeCount: updatedCommentData.like_count,
+      dislikeCount: updatedCommentData.dislike_count,
+      userVote: finalUserVote,
+    };
   }
 }

@@ -19,6 +19,8 @@ export class CommentUserDto {
   // nim?: string | null; // Add this if NIM is added to profiles table and needed
 }
 
+export type VoteType = 'upvote' | 'downvote' | null; // Define VoteType as needed
+
 export class CommentResponseDto {
   id: string;
   user: CommentUserDto;
@@ -26,4 +28,5 @@ export class CommentResponseDto {
   commentText: string;
   createdAtRelative: string;
   createdAt: Date;
+  userVote?: VoteType | null; // Optional: to indicate current user's vote on this comment
 }
