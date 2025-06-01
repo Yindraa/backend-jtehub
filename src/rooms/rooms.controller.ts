@@ -7,6 +7,7 @@ import { Room } from '../entities'; // Assuming you have a Room entity defined
 import { CommentResponseDto, CreateCommentDto, VoteType } from 'src/auth/comment/comment.dto';
 import { commentsService } from 'src/auth/comment/comment.service'; // Assuming you have a CommentsService for handling comments
 import { VoteCommentDto } from 'src/auth/comment/vote.comment.dto';
+import { AdminGuard } from 'src/auth/admin.guard';
 
 @Controller('rooms')
 @UseGuards(JwtGuard)
@@ -17,6 +18,7 @@ export class RoomsController {
   ) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   // @UseGuards(AdminGuard) // Protect this route - likely only Admins can create rooms
   create(@Body() createRoomDto: CreateRoomDto) {
     return this.roomsService.create(createRoomDto);
@@ -27,7 +29,7 @@ export class RoomsController {
   }
 
   @Patch(':roomCode') // Using PATCH for partial updates
-  // @UseGuards(AdminGuard) // Protect this route - likely only Admins can edit rooms
+  @UseGuards(AdminGuard) // Protect this route - likely only Admins can edit rooms
   updateRoom(
     @Param('roomCode') roomCode: string,
     @Body() updateRoomDto: UpdateRoomDto

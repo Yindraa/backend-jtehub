@@ -4,6 +4,7 @@ import { AuthGuard } from '@nestjs/passport'; // Or your custom AuthGuard
 import { ReservationsService } from './reservation.service';
 import { CreateReservationDto, ReservationResponseDto, UpdateReservationStatusDto } from './reservation.dto';
 import { JwtGuard } from 'src/auth/auth.guard';
+import { AdminGuard } from 'src/auth/admin.guard';
 // import { AdminGuard } from '../auth/guards/admin.guard'; // If you have a specific admin guard
 
 @Controller('reservations')
@@ -23,6 +24,7 @@ export class ReservationsController {
 
   @Get('admin')
   // @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard)
   async getAllReservationsForAdmin(): Promise<ReservationResponseDto[]> {
     // Ensure req.user has a role or a way to verify admin status if not using AdminGuard
     return this.reservationsService.findAllReservationsForAdmin();
@@ -37,6 +39,7 @@ export class ReservationsController {
 
   @Patch(':reservationId/status')
   // @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard) // Ensure this is the correct guard for admin actions
   async updateReservationStatus(
     @Param('reservationId') reservationId: string,
     @Req() req: any,
