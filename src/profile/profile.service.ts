@@ -11,6 +11,7 @@ import {
   import { Response } from 'express';
   import { JwtService } from '@nestjs/jwt';
   import { UpdateProfileDto, UserProfileResponseDto} from './profile.dto';
+import { ro } from 'date-fns/locale';
   
   @Injectable()
   export class ProfileService {
@@ -122,7 +123,7 @@ import {
           // Get profile data (for username and fullname)
           const { data: profile, error: profileError } = await this.supabase
             .from('profiles')
-            .select('username, fullname')
+            .select('username, fullname, role')
             .eq('id', userId)
             .single();
           
@@ -134,7 +135,8 @@ import {
             id: userId,
             email: authUser.user.email ?? 'unknown@example.com',
             username: profile.username,
-            fullname: profile.fullname
+            fullname: profile.fullname,
+            role: profile.role
           };
         } catch (error) {
           if (error instanceof NotFoundException) {

@@ -20,4 +20,5 @@ export class UserProfileResponseDto {
   email: string;
   username: string;
   fullname: string;
+  role:string
 } 
