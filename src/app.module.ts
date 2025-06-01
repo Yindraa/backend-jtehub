@@ -12,6 +12,7 @@ import { ScheduleService } from './schedule/schedule.service';
 import { RoomsController } from './rooms/rooms.controller';
 import { RoomsService } from './rooms/rooms.service';
 import { Room } from './entities';
+import { commentsService } from './auth/comment/comment.service';
 @Module({
   imports: [
     JwtModule.register({
@@ -19,6 +20,6 @@ import { Room } from './entities';
       secret: process.env.SUPABASE_JWT_SECRET,
 })],
   controllers: [AppController, AuthController, ProfileController, ScheduleController, RoomsController],
-  providers: [AppService, AuthService, JwtStrategy, ProfileService, ScheduleService, RoomsService],
+  providers: [AppService, AuthService, JwtStrategy, ProfileService, ScheduleService, RoomsService, commentsService],
 })
 export class AppModule {}
