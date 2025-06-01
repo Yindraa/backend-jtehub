@@ -15,7 +15,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000', // Local development
       'https://stashify-pi.vercel.app', // Production frontend
-      'https://framework-project-one.vercel.app/'
+      'https://framework-project-one.vercel.app'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
