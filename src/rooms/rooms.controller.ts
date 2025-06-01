@@ -88,5 +88,21 @@ export class RoomsController {
   ): Promise<{ message: string }> {
     return this.roomsService.delete(roomCode);
   }
+
+  @Delete(':roomCode/comments/:commentId')
+  // Apply AuthGuard first, then your custom authorization guard
+  @UseGuards(AdminGuard) /*, CommentOwnerOrAdminGuard */// Uncomment and use your actual guard
+  @HttpCode(HttpStatus.OK)
+  async deleteComment(
+    @Param('commentId') commentId: string,
+    // @Param('roomCode') roomCode: string, // roomCode is available if needed for guard logic
+    // @Req() req: { user: AuthenticatedUser }, // req is still available for the guard
+  ): Promise<{ message: string }> {
+    // The guard (CommentOwnerOrAdminGuard) would have already verified:
+    // 1. User is authenticated.
+    // 2. User is the owner of the comment OR user is an admin/superadmin.
+    // If the guard passes, we can proceed to delete.
+    return this.commentsService.deleteComment(commentId);
+  }
     // ... other room endpoints (GET, PUT, DELETE)
 }

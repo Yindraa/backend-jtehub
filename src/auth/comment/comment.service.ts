@@ -1,9 +1,10 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { formatDistanceToNow } from 'date-fns';
 import { id as localeId } from 'date-fns/locale'; // Indonesian locale
 import { CreateCommentDto, VoteType, CommentResponseDto, CommentUserDto, AllCommentsResponseDto } from './comment.dto'; // Consolidate imports from comment.dto
 import { VoteCommentDto } from './vote.comment.dto';
+import { UserRole } from 'src/users/users.dto'; // Adjust the path as needed to where UserRole is defined
 
 @Injectable()
 export class commentsService {
@@ -329,5 +330,40 @@ export class commentsService {
         username: profileData?.username || 'unknown',       // Handle if profileData is null
       };
     });
+  }
+
+  async deleteComment(commentId: string): Promise<{ message: string }> {
+    // 1. Optional: Verify the comment exists to provide a NotFoundException if it doesn't.
+    //    This is good practice even if the guard might have fetched it.
+    const { data: existingComment, error: findError } = await this.supabase
+      .from('room_comments')
+      .select('id') // Only need to check for existence
+      .eq('id', commentId)
+      .maybeSingle(); // Use maybeSingle to handle 0 or 1 row without erroring on 0
+
+    if (findError && findError.code !== 'PGRST116') { // PGRST116 means 0 rows, which !existingComment will catch
+        console.error(`Error verifying comment ${commentId} before delete:`, findError);
+        throw new Error(`Could not verify comment before deletion. Error: ${findError.message}`);
+    }
+    
+    if (!existingComment) {
+      throw new NotFoundException(`Comment with ID ${commentId} not found.`);
+    }
+
+    // 2. Proceed with deletion (authorization is assumed to be handled by a Guard)
+    const { error: deleteError } = await this.supabase
+      .from('room_comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (deleteError) {
+      console.error(`Error deleting comment with ID ${commentId}:`, deleteError);
+      throw new Error(`Could not delete comment. Error: ${deleteError.message}`);
+    }
+
+    // Note: Database triggers for updating room rating (if any) or handling
+    // cascaded deletes on 'comment_votes' would still fire as expected.
+
+    return { message: `Comment with ID ${commentId} successfully deleted.` };
   }
 }
