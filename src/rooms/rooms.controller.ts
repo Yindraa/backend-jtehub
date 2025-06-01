@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Patch, Param, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Patch, Param, Req, BadRequestException, HttpCode, Delete, HttpStatus } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './rooms.dto';
 import { JwtGuard } from '../auth/auth.guard'; // Ensure you have the correct path to your JWT guard
@@ -78,6 +78,15 @@ export class RoomsController {
     // roomCode isn't strictly needed by voteOnComment if commentId is unique,
     // but it's good for route structure. You could add a check if commentId belongs to roomCode.
     return this.commentsService.voteOnComment(commentId, userId, voteCommentDto);
+  }
+
+  @Delete(':roomCode')
+  @UseGuards(AdminGuard) // PROTECTED: Only admins (or superadmins) should delete rooms
+  @HttpCode(HttpStatus.OK) // Or HttpStatus.NO_CONTENT (204) if you don't return a body
+  async deleteRoom(
+    @Param('roomCode') roomCode: string,
+  ): Promise<{ message: string }> {
+    return this.roomsService.delete(roomCode);
   }
     // ... other room endpoints (GET, PUT, DELETE)
 }

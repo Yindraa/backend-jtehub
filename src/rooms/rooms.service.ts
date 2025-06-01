@@ -190,5 +190,39 @@ export class RoomsService {
     });
   }
 
+  async delete(roomCode: string): Promise<{ message: string }> {
+    // First, verify the room exists to provide a better error message if not found.
+    const { data: existingRoom, error: findError } = await this.supabase
+      .from('rooms')
+      .select('id')
+      .eq('room_code', roomCode)
+      .single();
+
+    if (findError && findError.code !== 'PGRST116') { // PGRST116 means 0 rows, handled below
+        console.error(`Error finding room ${roomCode} before delete:`, findError);
+        throw new Error(`Could not verify room before deletion. Error: ${findError.message}`);
+    }
+
+    if (!existingRoom) {
+      throw new NotFoundException(`Room with code ${roomCode} not found.`);
+    }
+
+    // Proceed with deletion
+    const { error: deleteError } = await this.supabase
+      .from('rooms')
+      .delete()
+      .eq('room_code', roomCode);
+
+    if (deleteError) {
+      console.error(`Error deleting room with code ${roomCode}:`, deleteError);
+      // You might want to check for specific error codes, e.g., foreign key violations
+      // if ON DELETE CASCADE is not set on related tables (like schedules or room_comments referencing rooms.id)
+      // and there are still dependent records.
+      throw new Error(`Could not delete room with code ${roomCode}. Error: ${deleteError.message}`);
+    }
+
+    return { message: `Room with code ${roomCode} successfully deleted.` };
+  }
+
   // ... other room service methods (findAll, findOne, update, remove)
 }
