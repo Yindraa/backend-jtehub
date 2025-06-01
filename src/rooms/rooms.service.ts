@@ -1,8 +1,8 @@
-import { Injectable, Inject, ConflictException } from '@nestjs/common';
+import { Injectable, Inject, ConflictException, NotFoundException } from '@nestjs/common';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { CreateRoomDto } from './rooms.dto';
 import { Room } from '../entities'; // Assuming you have a Room entity defined
-import { CurrentRoomStatusDto } from './rooms.dto'; // Assuming you have a DTO for current room status
+import { CurrentRoomStatusDto, UpdateRoomDto } from './rooms.dto'; // Assuming you have a DTO for current room status
 
 @Injectable()
 export class RoomsService {
@@ -70,6 +70,45 @@ export class RoomsService {
         scheduleStartTime: item.schedule_start_time,
         scheduleEndTime: item.schedule_end_time,
     }));
+  }
+
+  async update(roomCode: string, updateRoomDto: UpdateRoomDto): Promise<Room> {
+    const updateData  = updateRoomDto;
+
+    // Check if there's anything to update
+    if (Object.keys(updateData).length === 0) {
+      // Optionally, you could fetch and return the room without changes,
+      // or throw a BadRequestException. For now, let's fetch and return.
+      const { data: existingRoom, error: findError } = await this.supabase
+        .from('rooms')
+        .select('*')
+        .eq('room_code', roomCode)
+        .single();
+      if (findError || !existingRoom) {
+        throw new NotFoundException(`Room with code ${roomCode} not found.`);
+      }
+      return existingRoom;
+    }
+
+    const { data: updatedRoom, error } = await this.supabase
+      .from('rooms')
+      .update(updateData) // Pass only the fields to be updated
+      .eq('room_code', roomCode) // Identify the room by its code
+      .select()
+      .single();
+
+    if (error) {
+      // Handle potential errors, e.g., if the room_code to update to already exists (if room_code was updatable)
+      // For now, the main error would be if the room isn't found, which is handled by .single() if it returns null
+      console.error('Error updating room:', error);
+      throw new Error(`Could not update room with code ${roomCode}. Error: ${error.message}`);
+    }
+
+    if (!updatedRoom) {
+      throw new NotFoundException(`Room with code ${roomCode} not found or no changes made.`);
+    }
+
+    return updatedRoom;
   }
 
   // ... other room service methods (findAll, findOne, update, remove)

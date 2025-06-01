@@ -44,3 +44,25 @@ export class CurrentRoomStatusDto {
   scheduleStartTime: Date | null;
   scheduleEndTime: Date | null;
 }
+
+export class UpdateRoomDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  roomName?: string; // Making roomName updatable as well, common requirement
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  capacity?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['aktif', 'kosong', 'pemeliharaan'])
+  status?: 'aktif' | 'kosong' | 'pemeliharaan';
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  facilities?: string[];
+}
