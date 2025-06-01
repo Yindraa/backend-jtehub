@@ -129,7 +129,6 @@ export class commentsService {
     }
 
     if (!comments) return [];
-us
     return comments.map((comment) => {
       // Supabase returns the related 'profiles' record as an object here.
       // If 'profiles' is null (e.g., user_id in room_comments is stale or RLS issue), provide fallbacks.
