@@ -12,6 +12,7 @@ interface Profile {
   fullname: string | null;
   username: string | null;
   role: UserRole;
+  nim_nidn?: string | null; // Optional NIM/NIDN field
   // other profile fields...
 }
 
@@ -47,7 +48,7 @@ export class UserService {
     // We can use the admin client here as well, or a regular client if RLS allows reading profiles
     const { data: profiles, error: profilesError } = await this.supabaseAdmin
       .from('profiles')
-      .select('id, fullname, username, role');
+      .select('id, fullname, username, role, nim_nidn'); // Include nimNidn if needed, or remove if not applicable
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
@@ -70,6 +71,7 @@ export class UserService {
         lastSignInAtRelative: authUser.last_sign_in_at
           ? formatDistanceToNow(new Date(authUser.last_sign_in_at), { addSuffix: true, locale: localeId })
           : undefined,
+        nim_nidn: profile?.nim_nidn // Include NIM/NIDN if available
       };
     });
   }

@@ -21,6 +21,18 @@ export class RegisterDto {
     message: 'Password must be at least 8 characters with 1 letter and 1 number'
   })
   password: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'NIM/NIDN cannot be empty' }) // Or @IsOptional() if it's not mandatory
+  @Matches(/^[0-9A-Za-z\/.-]+$/, { // Basic alphanumeric, allows '/', '.', '-' common in NIM/NIDN
+      message: 'NIM/NIDN contains invalid characters'
+  })
+  nimNidn: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Phone number cannot be empty' }) // Or @IsOptional()
+  @IsPhoneNumber(undefined, { message: 'Invalid phone number format. Please include country code if applicable (e.g., +62).' }) // 'undefined' allows international formats
+  phoneNumber: string;
 }
 
 export class LoginDto {

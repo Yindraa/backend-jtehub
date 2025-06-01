@@ -58,6 +58,17 @@ export class AuthService {
         throw new ConflictException('Username already exists');
       }
 
+      // Optional: Check NIM/NIDN availability if it must be unique
+      const { data: existingUserByNim, error: nimError } = await this.supabase
+        .from('profiles')
+        .select('nim_nidn')
+        .eq('nim_nidn', registerDto.nimNidn)
+        .maybeSingle();
+      if (nimError && nimError.code !== 'PGRST116') throw nimError;
+      if (existingUserByNim) {
+        throw new ConflictException('NIM/NIDN already registered.');
+      }
+
       // Create auth user
       const { data: authData, error: authError } = await this.supabase.auth.signUp({
         email: registerDto.email,
@@ -65,6 +76,10 @@ export class AuthService {
       });
 
       if (authError) {
+        // Check for common auth errors like "User already registered"
+        if (authError.message.includes('User already registered')) {
+            throw new ConflictException('Email already registered.');
+        }
         throw new BadRequestException(authError.message);
       }
 
@@ -77,7 +92,9 @@ export class AuthService {
         .insert([{
           id: authData.user.id,
           username: registerDto.username,
-          fullname: registerDto.fullname
+          fullname: registerDto.fullname,
+          nim_nidn: registerDto.nimNidn,
+          phone_number: registerDto.phoneNumber,
         }]);
 
       if (profileError) {
