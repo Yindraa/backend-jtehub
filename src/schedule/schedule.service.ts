@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import { CreateScheduleDto, UpdateScheduleDto } from './schedule.dto';
+import { CreateScheduleDto, ScheduleDetailsDto, UpdateScheduleDto } from './schedule.dto';
 import { Schedule, Course } from '../entities'; // Assuming you have a Schedule entity defined
 
 @Injectable()
@@ -96,6 +96,50 @@ export class ScheduleService {
     }
 
     return newSchedule;
+  }
+
+  async findAllWithDetails(): Promise<ScheduleDetailsDto[]> {
+    const { data, error } = await this.supabase
+      .from('schedules')
+      .select(`
+        *, 
+        courses (
+          course_name
+        ),
+        rooms (
+          room_code,
+          room_name
+        )
+      `)
+      .order('schedule_start_time', { ascending: true }); // Optional: order the results
+
+    if (error) {
+      console.error('Error fetching schedules with details:', error);
+      throw new Error('Could not fetch schedules.');
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return data.map(schedule => {
+      // Supabase returns related data as nested objects (e.g., schedule.courses, schedule.rooms)
+      // These can be null if the foreign key is null or the related record doesn't exist.
+      return {
+        id: schedule.id,
+        lecturer_name: schedule.lecturer_name,
+        schedule_start_time: new Date(schedule.schedule_start_time),
+        schedule_end_time: new Date(schedule.schedule_end_time),
+        semester: schedule.semester,
+        created_at: new Date(schedule.created_at),
+        updated_at: new Date(schedule.updated_at),
+        course_id: schedule.course_id,
+        room_id: schedule.room_id,
+        course_name: schedule.courses?.course_name || null,
+        room_code: schedule.rooms?.room_code || null,
+        room_name: schedule.rooms?.room_name || null,
+      };
+    });
   }
 
   // async create(dto: CreateScheduleDto): Promise<Schedule> {

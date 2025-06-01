@@ -104,3 +104,25 @@ export class CreateScheduleDto {
     @IsNotEmpty()
     semester?: string;
   }
+
+  // src/schedules/dto/schedule-details.dto.ts
+
+export class ScheduleDetailsDto {
+  // Fields from the 'schedules' table itself
+  id: string; // UUID
+  lecturer_name: string;
+  schedule_start_time: Date;
+  schedule_end_time: Date;
+  semester: number;
+  created_at: Date;
+  updated_at: Date;
+
+  // Explicit foreign keys (optional, but can be useful)
+  course_id: string | null;
+  room_id: string | null;
+
+  // Joined fields
+  course_name: string | null;
+  room_code: string | null;
+  room_name: string | null;
+}
