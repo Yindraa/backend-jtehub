@@ -2,7 +2,7 @@ import { Controller, Post, Body, UseGuards, Get, Patch, Param } from '@nestjs/co
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './rooms.dto';
 import { JwtGuard } from '../auth/auth.guard'; // Ensure you have the correct path to your JWT guard
-import { CurrentRoomStatusDto, UpdateRoomDto } from './rooms.dto'; // Assuming you have a DTO for current room status
+import { CurrentRoomStatusDto, UpdateRoomDto, RoomScheduleDto } from './rooms.dto'; // Assuming you have a DTO for current room status
 import { Room } from '../entities'; // Assuming you have a Room entity defined
 
 @Controller('rooms')
@@ -27,6 +27,13 @@ export class RoomsController {
     @Body() updateRoomDto: UpdateRoomDto
   ): Promise<Room> {
     return this.roomsService.update(roomCode, updateRoomDto);
+  }
+
+  @Get(':roomCode/schedules')
+  getRoomSchedules(
+    @Param('roomCode') roomCode: string,
+  ): Promise<RoomScheduleDto[]> {
+    return this.roomsService.findSchedulesByRoomCode(roomCode);
   }
     // ... other room endpoints (GET, PUT, DELETE)
 }

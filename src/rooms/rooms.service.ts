@@ -2,7 +2,7 @@ import { Injectable, Inject, ConflictException, NotFoundException } from '@nestj
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { CreateRoomDto } from './rooms.dto';
 import { Room } from '../entities'; // Assuming you have a Room entity defined
-import { CurrentRoomStatusDto, UpdateRoomDto } from './rooms.dto'; // Assuming you have a DTO for current room status
+import { CurrentRoomStatusDto, UpdateRoomDto, RoomScheduleDto } from './rooms.dto'; // Assuming you have a DTO for current room status
 
 @Injectable()
 export class RoomsService {
@@ -109,6 +109,85 @@ export class RoomsService {
     }
 
     return updatedRoom;
+  }
+
+  async findSchedulesByRoomCode(roomCode: string): Promise<RoomScheduleDto[]> {
+    // 1. Find the room by its code to get its ID
+    const { data: roomData, error: roomError } = await this.supabase
+      .from('rooms')
+      .select('id, room_name') // Also fetching room_name for context, optional
+      .eq('room_code', roomCode)
+      .single();
+
+    if (roomError || !roomData) {
+      throw new NotFoundException(`Room with code ${roomCode} not found.`);
+    }
+    const roomId = roomData.id;
+
+    // 2. Fetch schedules for that room_id, joining with courses
+    const { data: schedulesData, error: schedulesError } = await this.supabase
+      .from('schedules')
+      .select(`
+        id,
+        semester,
+        lecturer_name,
+        schedule_start_time,
+        schedule_end_time,
+        courses (
+          course_code,
+          course_name
+        )
+      `)
+      .eq('room_id', roomId)
+      .order('schedule_start_time', { ascending: true }); // Order by start time
+
+    if (schedulesError) {
+      console.error(`Error fetching schedules for room ${roomCode}:`, schedulesError);
+      throw new Error(`Could not fetch schedules for room ${roomCode}.`);
+    }
+
+    if (!schedulesData) {
+      return []; // No schedules found for this room
+    }
+    console.log('Raw schedulesData from Supabase:', JSON.stringify(schedulesData, null, 2)); // Log the whole array
+
+    // 3. Map to DTO
+    // 3. Map to DTO - CORRECTED LOGIC
+    // 3. Map to DTO - CORRECTED LOGIC based on raw data
+    // 3. Map to DTO
+    return schedulesData.map(schedule => {
+      let courseDetails: { courseCode: string | null; courseName: string | null; };
+
+      // 'schedule.courses' is an OBJECT according to your previous raw log
+      let courseObject: { course_code: string | null; course_name: string | null; } | null = null;
+
+      if (Array.isArray(schedule.courses) && schedule.courses.length > 0) {
+        courseObject = schedule.courses[0];
+      } else if (schedule.courses && typeof schedule.courses === 'object') {
+        // If it's an array, take the first element; otherwise, use as is
+        courseObject = Array.isArray(schedule.courses) ? schedule.courses[0] : schedule.courses;
+      }
+
+      if (courseObject) {
+        courseDetails = {
+          courseCode: courseObject.course_code,
+          courseName: courseObject.course_name,
+        };
+      } else {
+        courseDetails = { courseCode: null, courseName: null };
+      }
+
+      // Ensure the returned object strictly matches RoomScheduleDto
+      const resultItem: RoomScheduleDto = {
+        scheduleId: schedule.id as string, // Cast if necessary, or ensure Supabase types are precise
+        semester: schedule.semester as number,
+        lecturerName: schedule.lecturer_name as (string | null),
+        scheduleStartTime: new Date(schedule.schedule_start_time),
+        scheduleEndTime: new Date(schedule.schedule_end_time),
+        course: courseDetails,
+      };
+      return resultItem;
+    });
   }
 
   // ... other room service methods (findAll, findOne, update, remove)

@@ -66,3 +66,17 @@ export class UpdateRoomDto {
   @IsString({ each: true })
   facilities?: string[];
 }
+
+class CourseInScheduleDto {
+  courseCode: string | null; // Allow null
+  courseName: string | null; // Allow null
+}
+
+export class RoomScheduleDto {
+  scheduleId: string; // Ensure this and other types match what you expect
+  semester: number;
+  lecturerName: string | null; // This was already allowing null
+  scheduleStartTime: Date;
+  scheduleEndTime: Date;
+  course: CourseInScheduleDto;
+}
