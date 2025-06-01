@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException, ConflictException } from '@nestj
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { formatDistanceToNow } from 'date-fns';
 import { id as localeId } from 'date-fns/locale'; // Indonesian locale
-import { CreateCommentDto, VoteType, CommentResponseDto, CommentUserDto } from './comment.dto'; // Consolidate imports from comment.dto
+import { CreateCommentDto, VoteType, CommentResponseDto, CommentUserDto, AllCommentsResponseDto } from './comment.dto'; // Consolidate imports from comment.dto
 import { VoteCommentDto } from './vote.comment.dto';
 
 @Injectable()
@@ -282,5 +282,52 @@ export class commentsService {
       dislikeCount: updatedCommentData.dislike_count,
       userVote: finalUserVote,
     };
+  }
+
+  async getAllCommentsAcrossRooms(): Promise<AllCommentsResponseDto[]> {
+    const { data: comments, error } = await this.supabase
+      .from('room_comments')
+      .select(`
+        id,
+        comment_text,
+        rating,
+        like_count,
+        dislike_count,
+        created_at,
+        rooms!left ( room_code ), 
+        profiles!left ( fullname, username )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all comments:', error);
+      throw new Error('Could not fetch all comments.');
+    }
+
+    if (!comments) {
+      return [];
+    }
+
+    return comments.map((comment: any) => {
+      // Access joined data using the table names
+      const roomData = comment.rooms; 
+      const profileData = comment.profiles;
+
+      return {
+        commentId: comment.id,
+        roomCode: roomData?.room_code || 'N/A', // Handle if roomData is null
+        commentText: comment.comment_text,
+        rating: comment.rating,
+        likeCount: comment.like_count,
+        dislikeCount: comment.dislike_count,
+        commentedAt: new Date(comment.created_at),
+        commentedAtRelative: formatDistanceToNow(new Date(comment.created_at), {
+          addSuffix: true,
+          locale: localeId,
+        }),
+        userFullName: profileData?.fullname || 'Unknown User', // Handle if profileData is null
+        username: profileData?.username || 'unknown',       // Handle if profileData is null
+      };
+    });
   }
 }

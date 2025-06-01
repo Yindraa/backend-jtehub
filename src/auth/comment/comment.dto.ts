@@ -30,3 +30,16 @@ export class CommentResponseDto {
   createdAt: Date;
   userVote?: VoteType | null; // Optional: to indicate current user's vote on this comment
 }
+
+export class AllCommentsResponseDto {
+  commentId: string;
+  roomCode: string;
+  commentText: string;
+  rating: number;
+  likeCount: number;
+  dislikeCount: number;
+  commentedAt: Date; // The actual timestamp
+  commentedAtRelative: string; // e.g., "2 jam lalu"
+  userFullName: string | null;
+  username: string | null;
+}

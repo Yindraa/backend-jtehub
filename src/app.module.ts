@@ -19,6 +19,7 @@ import { ReservationsController } from './reservation/reservation.controller';
 import { ReservationsService } from './reservation/reservation.service';
 import { RoomsModule } from './rooms/rooms.module';
 import { UserModule } from './users/user.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,7 +29,8 @@ import { UserModule } from './users/user.module';
     JwtModule.register({
       global: true,
       secret: process.env.SUPABASE_JWT_SECRET,}),
-    UserModule
+    UserModule,
+    DashboardModule
 ],
   controllers: [AppController, AuthController, ProfileController, ScheduleController, RoomsController, ReservationsController],
   providers: [AppService, AuthService, JwtStrategy, ProfileService, ScheduleService, RoomsService, commentsService, ReservationsService],
