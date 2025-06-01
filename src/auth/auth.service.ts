@@ -123,7 +123,7 @@ export class AuthService {
       // Get user profile
       const { data: profile } = await this.supabase
         .from('profiles')
-        .select('username, fullname')
+        .select('username, fullname, role')
         .eq('id', data.user.id)
         .single();
 
