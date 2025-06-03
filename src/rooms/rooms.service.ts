@@ -48,27 +48,54 @@ export class RoomsService {
     return newRoom;
   }
 
+  // async findCurrentStatus(): Promise<CurrentRoomStatusDto[]> {
+  //   const { data, error } = await this.supabase
+  //     .rpc('get_current_room_status'); // Call the function
+
+  //   if (error) {
+  //     console.error('Error fetching current room status:', error);
+  //     throw new Error('Could not fetch current room status.');
+  //   }
+
+  //   // Map the data to our DTO (optional but good practice for consistency)
+  //   return data.map(item => ({
+  //       roomId: item.room_id,
+  //       roomCode: item.room_code,
+  //       roomName: item.room_name,
+  //       status: item.status,
+  //       capacity: item.capacity,
+  //       rating: item.rating,
+  //       courseName: item.course_name,
+  //       lecturerName: item.lecturer_name,
+  //       scheduleStartTime: item.schedule_start_time,
+  //       scheduleEndTime: item.schedule_end_time,
+  //   }));
+  // }
+
   async findCurrentStatus(): Promise<CurrentRoomStatusDto[]> {
     const { data, error } = await this.supabase
-      .rpc('get_current_room_status'); // Call the function
+      .rpc('get_current_room_status2');
 
     if (error) {
-      console.error('Error fetching current room status:', error);
+      console.error('Error fetching current room status:', JSON.stringify(error, null, 2));
       throw new Error('Could not fetch current room status.');
     }
 
-    // Map the data to our DTO (optional but good practice for consistency)
-    return data.map(item => ({
-        roomId: item.room_id,
-        roomCode: item.room_code,
-        roomName: item.room_name,
-        status: item.status,
-        capacity: item.capacity,
-        rating: item.rating,
-        courseName: item.course_name,
-        lecturerName: item.lecturer_name,
-        scheduleStartTime: item.schedule_start_time,
-        scheduleEndTime: item.schedule_end_time,
+    if (!data) {
+        return [];
+    }
+
+    return data.map((item: any) => ({ // Gunakan 'any' atau buat interface yang lebih spesifik untuk hasil RPC
+      roomId: item.room_id,
+      roomCode: item.room_code,
+      roomName: item.room_name,
+      status: item.status,
+      capacity: item.capacity,
+      rating: item.rating !== null ? Number(item.rating) : null, // NUMERIC bisa jadi string
+      eventName: item.event_name,                             // Nama field baru
+      personInCharge: item.person_in_charge,                  // Nama field baru
+      eventStartTime: item.event_start_time ? new Date(item.event_start_time) : null, // Nama field baru
+      eventEndTime: item.event_end_time ? new Date(item.event_end_time) : null,     // Nama field baru
     }));
   }
 
