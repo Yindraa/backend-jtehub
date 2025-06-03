@@ -3,6 +3,7 @@ import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { CreateRoomDto } from './rooms.dto';
 import { Room } from '../entities'; // Assuming you have a Room entity defined
 import { CurrentRoomStatusDto, UpdateRoomDto, RoomScheduleDto } from './rooms.dto'; // Assuming you have a DTO for current room status
+import { formatInTimeZone } from 'date-fns-tz';
 
 @Injectable()
 export class RoomsService {
@@ -84,19 +85,31 @@ export class RoomsService {
     if (!data) {
         return [];
     }
+    
+    const manadoTimeZone = 'Asia/Makassar'; // WITA
 
-    return data.map((item: any) => ({ // Gunakan 'any' atau buat interface yang lebih spesifik untuk hasil RPC
-      roomId: item.room_id,
-      roomCode: item.room_code,
-      roomName: item.room_name,
-      status: item.status,
-      capacity: item.capacity,
-      rating: item.rating !== null ? Number(item.rating) : null, // NUMERIC bisa jadi string
-      eventName: item.event_name,                             // Nama field baru
-      personInCharge: item.person_in_charge,                  // Nama field baru
-      eventStartTime: item.event_start_time ? new Date(item.event_start_time) : null, // Nama field baru
-      eventEndTime: item.event_end_time ? new Date(item.event_end_time) : null,     // Nama field baru
-    }));
+
+    return data.map((item: any) => {
+  const eventStartTimeWITA = item.event_start_time 
+    ? formatInTimeZone(new Date(item.event_start_time), manadoTimeZone, "yyyy-MM-dd'T'HH:mm:ssXXX") 
+    : null;
+  const eventEndTimeWITA = item.event_end_time 
+    ? formatInTimeZone(new Date(item.event_end_time), manadoTimeZone, "yyyy-MM-dd'T'HH:mm:ssXXX") 
+    : null;
+
+  return {
+    roomId: item.room_id,
+    roomCode: item.room_code,
+    roomName: item.room_name,
+    status: item.status,
+    capacity: item.capacity,
+    rating: item.rating !== null ? Number(item.rating) : null,
+    eventName: item.event_name,
+    personInCharge: item.person_in_charge,
+    eventStartTime: eventStartTimeWITA, // String waktu Manado
+    eventEndTime: eventEndTimeWITA,     // String waktu Manado
+  };
+  });
   }
 
   async update(roomCode: string, updateRoomDto: UpdateRoomDto): Promise<Room> {
