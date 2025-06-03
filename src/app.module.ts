@@ -20,6 +20,8 @@ import { ReservationsService } from './reservation/reservation.service';
 import { RoomsModule } from './rooms/rooms.module';
 import { UserModule } from './users/user.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AcademicScheduleController } from './academic_schedule/academic-schedule.controller';
+import { AcademicScheduleModule } from './academic_schedule/academic-schedule.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,7 +32,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
       global: true,
       secret: process.env.SUPABASE_JWT_SECRET,}),
     UserModule,
-    DashboardModule
+    DashboardModule,
+    AcademicScheduleModule
 ],
   controllers: [AppController, AuthController, ProfileController, ScheduleController, RoomsController, ReservationsController],
   providers: [AppService, AuthService, JwtStrategy, ProfileService, ScheduleService, RoomsService, commentsService, ReservationsService],
