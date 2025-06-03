@@ -153,6 +153,72 @@ export class AcademicScheduleService {
     };
   }
 
+  async findAllWithDetails(): Promise<AcademicScheduleResponseDto[]> {
+    const { data, error } = await this.supabase
+      .from('academic_schedules')
+      .select(`
+        id,
+        lecturer_name,
+        semester_ordinal,
+        semester_type,
+        day_of_week,
+        start_time,
+        end_time,
+        created_at,
+        updated_at,
+        course_id,
+        room_id,
+        courses ( 
+          course_name,
+          course_code 
+        ),
+        rooms (   
+          room_code,
+          room_name 
+        )
+      `)
+      .order('semester_ordinal', { ascending: true })
+      .order('day_of_week', { ascending: true })
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching academic schedules with details:', JSON.stringify(error, null, 2));
+      throw new Error('Could not fetch academic schedules.');
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return data.map(schedule => {
+      // Corrected casting:
+      // TypeScript thinks schedule.courses/rooms might be an array due to general typings.
+      // We know from Supabase's behavior with this select on a to-one relation,
+      // it will be a single object or null. We use 'as any' to bypass the stricter
+      // array-to-object type check and then cast to our expected object shape.
+      const courseData = schedule.courses as any as { course_name: string | null; course_code: string | null; } | null;
+      const roomData = schedule.rooms as any as { room_code: string | null; room_name: string | null; } | null;
+
+      return {
+        id: schedule.id,
+        lecturerName: schedule.lecturer_name,
+        semesterOrdinal: schedule.semester_ordinal,
+        semesterType: schedule.semester_type as SemesterTypeResponse,
+        dayOfWeek: schedule.day_of_week,
+        startTime: schedule.start_time,
+        endTime: schedule.end_time,
+        createdAt: new Date(schedule.created_at),
+        updatedAt: new Date(schedule.updated_at),
+        courseId: schedule.course_id,
+        roomId: schedule.room_id,
+        courseName: courseData?.course_name || null,
+        courseCode: courseData?.course_code || null,
+        roomCode: roomData?.room_code || null,
+        roomName: roomData?.room_name || null,
+      };
+    });
+  }
+
   // Metode findAll, findOne, update, delete untuk academic_schedules
   // Perlu diingat: saat mengambil jadwal untuk ditampilkan (misalnya, untuk minggu ini),
   // Anda perlu logika untuk "mengaktifkan" aturan academic_schedule ini dengan

@@ -49,20 +49,21 @@ export enum SemesterTypeResponse { // Bisa gunakan enum yang sama jika namanya k
 }
 export class AcademicScheduleResponseDto {
   id: string;
-  courseId: string | null;
-  roomId: string | null;
   lecturerName: string | null;
   semesterOrdinal: number;
-  semesterType: SemesterTypeResponse; // Tipe semester yang dideduksi
+  semesterType: SemesterTypeResponse;
   dayOfWeek: number;
-  startTime: string; // HH:MM:SS
-  endTime: string;   // HH:MM:SS
+  startTime: string; // HH:MM:SS from DB
+  endTime: string;   // HH:MM:SS from DB
   createdAt: Date;
   updatedAt: Date;
 
-  // Info tambahan yang mungkin berguna
-  courseName?: string | null;
-  courseCode?: string | null;
-  roomCode?: string | null;
-  roomName?: string | null;
+  // Joined fields (ensure these are present)
+  courseId: string | null; // Foreign key
+  courseName: string | null;
+  courseCode: string | null; // Added for completeness
+
+  roomId: string | null; // Foreign key
+  roomCode: string | null;
+  roomName: string | null;
 }
