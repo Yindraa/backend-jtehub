@@ -14,7 +14,6 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000', // Local development
-      'https://stashify-pi.vercel.app', // Production frontend
       'https://framework-project-one.vercel.app'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
