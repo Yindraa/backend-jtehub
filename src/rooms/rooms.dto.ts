@@ -41,8 +41,8 @@ export class CurrentRoomStatusDto {
   rating: number;
   courseName: string | null;
   lecturerName: string | null;
-  scheduleStartTime: string | null;
-  scheduleEndTime: string | null;
+  scheduleStartTime: Date | null;
+  scheduleEndTime: Date | null;
 }
 
 export class UpdateRoomDto {
