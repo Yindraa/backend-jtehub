@@ -19,11 +19,11 @@ export class AcademicScheduleController { // Atau AcademicScheduleController
     return this.academicscheduleService.createAcademicSchedule(createAcademicScheduleDto);
   }
 
-  @Get() // Endpoint to get all academic schedules with details
-  @UseGuards(JwtGuard, AdminGuard) // Protect as needed, admins usually view this
-  async getAllAcademicSchedulesWithDetails(): Promise<AcademicScheduleResponseDto[]> {
-    return this.academicscheduleService.findAllWithDetails();
-  }
+  // @Get() // Endpoint to get all academic schedules with details
+  // @UseGuards(JwtGuard, AdminGuard) // Protect as needed, admins usually view this
+  // async getAllAcademicSchedulesWithDetails(): Promise<AcademicScheduleResponseDto[]> {
+  //   return this.academicscheduleService.findAllWithDetails();
+  // }
 
   // Endpoint lain untuk GET, UPDATE, DELETE jadwal akademis bisa ditambahkan di sini
 }
