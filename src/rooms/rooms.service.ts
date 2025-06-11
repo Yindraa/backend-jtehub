@@ -75,7 +75,7 @@ export class RoomsService {
 
   async findCurrentStatus(): Promise<CurrentRoomStatusDto[]> {
     const { data, error } = await this.supabase
-      .rpc('get_current_room_status2');
+      .rpc('get_current_room_status');
 
     if (error) {
       console.error('Error fetching current room status:', JSON.stringify(error, null, 2));
